@@ -1,13 +1,14 @@
 var mainState = {
     preload: function() {
 
-        game.load.image('bird', '../img/ball.png');
-        game.load.image('pipe', '../img/ball.png');
+        game.load.image('bird', 'ball.png');
+        game.load.image('pipe', '/img/ball.png');
 
     },
 
     create: function() {
         game.stage.backgroundColor = '#71c5cf';
+        game.stage.background = '../img/mario.png';
 
         // Set the physics system
         game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -32,10 +33,13 @@ var mainState = {
         this.timer = game.time.events.loop(1500, this.addRowOfPipes, this);
 
 
-        this.score = 0;
+        this.score = -1;
         this.labelScore = game.add.text(20, 20, "0",
             { font: "30px Arial", fill: "#ffffff" });
         //scoring
+
+        // Move the anchor to the left and downward
+        this.bird.anchor.setTo(-0.2, 0.5);
 
 
     },
@@ -46,13 +50,30 @@ var mainState = {
             this.restartGame();
 
         game.physics.arcade.overlap(
-            this.bird, this.pipes, this.restartGame, null, this);
+            this.bird, this.pipes, this.hitPipe, null, this);
+
+
+        if (this.bird.angle < 20)
+            this.bird.angle += 1;
 
     },
 
     jump: function() {
+
+        if (this.bird.alive == false)
+            return;
+
         // Add a vertical velocity to the bird
         this.bird.body.velocity.y = -350;
+
+        // Create an animation on the bird
+        var animation = game.add.tween(this.bird);
+
+        // Change the angle of the bird to -20° in 100 milliseconds
+        animation.to({angle: -20}, 100);
+
+        // And start the animation
+        animation.start();
     },
 
 // Restart the game
@@ -93,6 +114,25 @@ var mainState = {
         this.score += 1;
         this.labelScore.text = this.score;
 
+
+    },
+
+    hitPipe: function() {
+        // If the bird has already hit a pipe, do nothing
+        // It means the bird is already falling off the screen
+        if (this.bird.alive == false)
+            return;
+
+        // Set the alive property of the bird to false
+        this.bird.alive = false;
+
+        // Prevent new pipes from appearing
+        game.time.events.remove(this.timer);
+
+        // Go through all the pipes, and stop their movement
+        this.pipes.forEach(function(p){
+            p.body.velocity.x = 0;
+        }, this);
     },
 
 };
